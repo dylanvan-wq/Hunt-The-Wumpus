@@ -1,0 +1,149 @@
+import java.util.*;
+ 
+public class HuntTheWumpus {
+ 
+    private static Map<Integer, int[]> cave = new HashMap<>();
+    private static int playerPos;
+    private static int wumpusPos;
+    private static Set<Integer> pits = new HashSet<>();
+    private static Set<Integer> bats = new HashSet<>();
+    private static int arrows = 3;
+    private static Random rand = new Random();
+ 
+    public static void main(String[] args) {
+        setupCave();
+        populateCave();
+        gameLoop();
+    }
+ 
+    private static void setupCave() {
+        cave.put(1, new int[]{8, 2, 5});
+        cave.put(2, new int[]{10, 3, 1});
+        cave.put(3, new int[]{12, 4, 2});
+        cave.put(4, new int[]{14, 5, 3});
+        cave.put(5, new int[]{6, 1, 4});
+        cave.put(6, new int[]{5, 7, 15});
+        cave.put(7, new int[]{17, 8, 6});
+        cave.put(8, new int[]{1, 9, 7});
+        cave.put(9, new int[]{18, 10, 8});
+        cave.put(10, new int[]{2, 11, 9});
+        cave.put(11, new int[]{19, 12, 10});
+        cave.put(12, new int[]{3, 13, 11});
+        cave.put(13, new int[]{20, 14, 12});
+        cave.put(14, new int[]{4, 15, 13});
+        cave.put(15, new int[]{6, 16, 14});
+        cave.put(16, new int[]{15, 17, 20});
+        cave.put(17, new int[]{7, 18, 16});
+        cave.put(18, new int[]{9, 19, 17});
+        cave.put(19, new int[]{11, 20, 18});
+        cave.put(20, new int[]{13, 16, 19});
+    }
+ 
+    private static void populateCave() {
+        playerPos = rand.nextInt(20) + 1;
+        do {
+            wumpusPos = rand.nextInt(20) + 1;
+        } while (wumpusPos == playerPos);
+ 
+        while (pits.size() < 3) {
+            int pos = rand.nextInt(20) + 1;
+            if (pos != playerPos && pos != wumpusPos) pits.add(pos);
+        }
+ 
+        while (bats.size() < 3) {
+            int pos = rand.nextInt(20) + 1;
+            if (pos != playerPos && pos != wumpusPos && !pits.contains(pos)) bats.add(pos);
+        }
+    }
+ 
+    private static void gameLoop() {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.println("You are in room " + playerPos);
+            System.out.println("Tunnels lead to: " + Arrays.toString(cave.get(playerPos)));
+            senseNearby();
+ 
+            System.out.print("Move (M) or Shoot (S)? ");
+            String action = scanner.next().toUpperCase();
+ 
+            if (action.equals("M")) {
+                move(scanner);
+            } else if (action.equals("S")) {
+                shoot(scanner);
+            } else {
+                System.out.println("Invalid command.");
+            }
+ 
+            checkCurrentRoom();
+        }
+    }
+ 
+    private static void senseNearby() {
+        for (int neighbor : cave.get(playerPos)) {
+            if (neighbor == wumpusPos)
+                System.out.println("You smell a terrible stench.");
+            if (pits.contains(neighbor))
+                System.out.println("You feel a cold wind blowing from a nearby cavern.");
+            if (bats.contains(neighbor))
+                System.out.println("You hear rustling of bat wings.");
+        }
+    }
+ 
+    private static void move(Scanner scanner) {
+        System.out.print("Enter room to move to: ");
+        int moveTo = scanner.nextInt();
+ 
+        if (Arrays.stream(cave.get(playerPos)).anyMatch(r -> r == moveTo)) {
+            playerPos = moveTo;
+        } else {
+            System.out.println("You can't move there.");
+        }
+    }
+ 
+    private static void shoot(Scanner scanner) {
+        if (arrows <= 0) {
+            System.out.println("No arrows left!");
+            return;
+        }
+ 
+        System.out.print("Enter room to shoot into: ");
+        int shootTo = scanner.nextInt();
+        arrows--;
+ 
+        if (shootTo == wumpusPos) {
+            System.out.println("You killed the Wumpus! You win!");
+            System.exit(0);
+        } else {
+            System.out.println("You missed...");
+            if (rand.nextInt(100) < 75) {
+                moveWumpus();
+            }
+            if (arrows == 0) {
+                System.out.println("You have run out of arrows. Game Over.");
+                System.exit(0);
+            }
+        }
+    }
+ 
+    private static void moveWumpus() {
+        int[] possibleRooms = cave.get(wumpusPos);
+        wumpusPos = possibleRooms[rand.nextInt(possibleRooms.length)];
+        System.out.println("The Wumpus has moved!");
+    }
+ 
+    private static void checkCurrentRoom() {
+        if (playerPos == wumpusPos) {
+            System.out.println("The Wumpus got you! Game Over.");
+            System.exit(0);
+        }
+        if (pits.contains(playerPos)) {
+            System.out.println("You fell into a bottomless pit! Game Over.");
+            System.exit(0);
+        }
+        if (bats.contains(playerPos)) {
+            System.out.println("Bats carried you to another room!");
+            playerPos = rand.nextInt(20) + 1;
+            checkCurrentRoom(); // recheck new room
+        }
+    }
+}
